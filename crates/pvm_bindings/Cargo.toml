@@ -1,0 +1,17 @@
+[package]
+name = "pvm_bindings"
+version = "0.1.0"
+authors = ["Alexander Lednev <iceseer@gmail.com>"]
+edition = "2021"
+
+[lib]
+name = "pvm_bindings"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+cpp = { path = "../cpp" }
+polkavm = { path = "../polkavm/crates/polkavm", features = ["std"] }
+polkavm-common = { path = "../polkavm/crates/polkavm-common" }
+
+[build-dependencies]
+build-helper = { path = "../build-helper" }
