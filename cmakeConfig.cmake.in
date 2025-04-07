@@ -15,7 +15,7 @@ set(lib_path "${_IMPORT_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 
 set(include_path ${_IMPORT_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/)
 if(NOT EXISTS ${include_path})
-    message(FATAL_ERROR "qdrvm-crates headers not found in ${include_path}!")
+    message(FATAL_ERROR "qdrvm-crates headers not found in ${include_path} !")
 endif()
 
 foreach (CRATE @SELECTED_CRATES@)
@@ -25,11 +25,11 @@ foreach (CRATE @SELECTED_CRATES@)
         set(static_lib_path "${lib_path}/${static_lib_name}")
         set(shared_lib_path "${lib_path}/${shared_lib_name}")
         if(EXISTS ${shared_lib_path})
-            set(lib_path ${shared_lib_path})
+            set(lib_file_path ${shared_lib_path})
         elseif(EXISTS ${static_lib_path})
-            set(lib_path ${static_lib_path})
+            set(lib_file_path ${static_lib_path})
         else()
-            message(FATAL_ERROR "${CRATE} library (${shared_lib_name} or ${static_lib_name}) not found in ${lib_path}!")
+            message(FATAL_ERROR "${CRATE} library (${shared_lib_name} or ${static_lib_name}) not found in ${lib_path} !")
         endif()
     
         add_library(${CRATE}::${CRATE} STATIC IMPORTED GLOBAL)
@@ -58,7 +58,7 @@ foreach (CRATE @SELECTED_CRATES@)
 
         set_target_properties(${CRATE}::${CRATE} PROPERTIES
             INTERFACE_INCLUDE_DIRECTORIES ${include_path}
-            IMPORTED_LOCATION ${lib_path}
+            IMPORTED_LOCATION ${lib_file_path}
             )
 endif()
 
@@ -69,6 +69,7 @@ unset(static_lib_name)
 unset(shared_lib_path)
 unset(static_lib_path)
 unset(lib_path)
+unset(lib_file_path)
 unset(include_path)
 
 check_required_components(qdrvm-crates)
