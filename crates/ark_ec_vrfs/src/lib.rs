@@ -1,10 +1,10 @@
-use ark_ec_vrfs::prelude::ark_serialize::CanonicalDeserialize;
-use ark_ec_vrfs::prelude::ark_serialize::CanonicalSerialize;
-use ark_ec_vrfs::ring::Verifier;
-use ark_ec_vrfs::suites::bandersnatch::edwards as bandersnatch;
+use ark_vrf::reexports::ark_serialize::CanonicalDeserialize;
+use ark_vrf::reexports::ark_serialize::CanonicalSerialize;
+use ark_vrf::ring::Verifier;
+use ark_vrf::suites::bandersnatch as bandersnatch;
 use bandersnatch::PcsParams;
 use bandersnatch::RingCommitment;
-use bandersnatch::RingContext;
+use bandersnatch::RingProofParams;
 use bandersnatch::RingVerifier;
 use cpp::Opaque;
 use std::sync::OnceLock;
@@ -46,13 +46,13 @@ pub unsafe extern "C" fn jam_bandersnatch_output(
 
 pub struct JamBandersnatchRing;
 impl Opaque for JamBandersnatchRing {
-    type Type = RingContext;
+    type Type = RingProofParams;
 }
 
 #[allow(unused_attributes)]
 #[no_mangle]
 pub unsafe extern "C" fn jam_bandersnatch_ring_new(ring_size: u32) -> *mut JamBandersnatchRing {
-    let ring_ctx = if let Ok(ring_ctx) = RingContext::from_srs(ring_size as _, pcs_params().clone())
+    let ring_ctx = if let Ok(ring_ctx) = RingProofParams::from_srs(ring_size as _, pcs_params().clone())
     {
         ring_ctx
     } else {
