@@ -1,7 +1,7 @@
 use ark_vrf::reexports::ark_serialize::CanonicalDeserialize;
 use ark_vrf::reexports::ark_serialize::CanonicalSerialize;
 use ark_vrf::ring::Verifier;
-use ark_vrf::suites::bandersnatch as bandersnatch;
+use ark_vrf::suites::bandersnatch;
 use bandersnatch::PcsParams;
 use bandersnatch::RingCommitment;
 use bandersnatch::RingProofParams;
@@ -52,7 +52,8 @@ impl Opaque for JamBandersnatchRing {
 #[allow(unused_attributes)]
 #[no_mangle]
 pub unsafe extern "C" fn jam_bandersnatch_ring_new(ring_size: u32) -> *mut JamBandersnatchRing {
-    let ring_ctx = if let Ok(ring_ctx) = RingProofParams::from_srs(ring_size as _, pcs_params().clone())
+    let ring_ctx = if let Ok(ring_ctx) =
+        RingProofParams::from_pcs_params(ring_size as _, pcs_params().clone())
     {
         ring_ctx
     } else {
@@ -85,7 +86,7 @@ pub unsafe extern "C" fn jam_bandersnatch_ring_commitment(
             if let Ok(pk) = bandersnatch::Public::deserialize_compressed(&mut &pk[..]) {
                 pk.0
             } else {
-                ring_ctx.padding_point()
+                RingProofParams::padding_point()
             }
         })
         .collect();
