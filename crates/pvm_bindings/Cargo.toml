@@ -10,8 +10,8 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 cpp = { path = "../cpp" }
-polkavm = { path = "../polkavm/crates/polkavm", features = ["std"] }
-polkavm-common = { path = "../polkavm/crates/polkavm-common" }
+polkavm = { version = "0.22", features = ["std"] }
+polkavm-common = "0.22"
 
 [build-dependencies]
 build-helper = { path = "../build-helper" }
