@@ -4,17 +4,16 @@ import sys
 required_structure = {
     'install': {
         'include': {
+            'ark_vrf': ['ark_vrf.h'],
             'arkworks': ['arkworks.h'],
             'bandersnatch_vrfs': ['bandersnatch_vrfs.h'],
             'schnorrkel': ['schnorrkel.h']
         },
         'lib': {
             'cmake': {
-                'arkworks': ['arkworksConfig.cmake'],
-                'bandersnatch_vrfs': ['bandersnatch_vrfsConfig.cmake'],
-                'schnorrkel': ['schnorrkelConfig.cmake']
+                'qdrvm-crates': ['qdrvm-cratesConfig.cmake'],
             },
-            '': ['libarkworks_crust.a', 'libbandersnatch_vrfs_crust.a', 'libschnorrkel_crust.a']
+            '': ['libarkworks_crust.a', 'libbandersnatch_vrfs_crust.a', 'libschnorrkel_crust.a', 'libark_vrf_crust.a']
         }
     }
 }
