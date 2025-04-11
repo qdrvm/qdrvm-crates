@@ -5,8 +5,12 @@ project(qdrvm-crates C CXX)
 include(cmake/add_rust_library.cmake)
 
 list(APPEND QDRVM_ALL_CRATES schnorrkel arkworks bandersnatch_vrfs ark_vrf)
-set(QDRVM_BIND_CRATES "" CACHE STRING "The list of crates to build.")
+set(QDRVM_BIND_CRATES "" CACHE STRING "The list of crates to build or 'all'.")
 set_property(CACHE QDRVM_BIND_CRATES PROPERTY STRINGS ${QDRVM_ALL_CRATES})
+
+if (QDRVM_BIND_CRATES STREQUAL "all")
+    set(QDRVM_BIND_CRATES ${QDRVM_ALL_CRATES})
+endif()
 
 foreach (CRATE ${QDRVM_BIND_CRATES})
     list(FIND QDRVM_ALL_CRATES ${CRATE} CRATE_IDX)
