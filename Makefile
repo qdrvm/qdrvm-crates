@@ -8,7 +8,7 @@ build:
 	if [ "$$(uname)" = "Darwin" ]; then \
 		export SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) ; \
 	fi ; \
-	cmake . -B"$(BUILD_DIR)" -DCMAKE_INSTALL_PREFIX=install -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ; \
+	cmake . -B"$(BUILD_DIR)" -DCMAKE_INSTALL_PREFIX=install -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -DQDRVM_BIND_CRATES=$(CRATES); \
 	cmake --build "$(BUILD_DIR)" -- -j$(BUILD_THREADS) ; \
 	cmake --install "$(BUILD_DIR)" 
 

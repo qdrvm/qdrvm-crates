@@ -8,7 +8,7 @@ run_build() {
 
   echo "Building with BUILD_TYPE=$build_type..."
   
-  make -B build BUILD_TYPE="$build_type" BUILD_DIR="$build_dir"
+  make -B build BUILD_TYPE="$build_type" BUILD_DIR="$build_dir" CRATES=all
   
   if [ $? -ne 0 ]; then
     echo "Error: Build failed for BUILD_TYPE=$build_type."

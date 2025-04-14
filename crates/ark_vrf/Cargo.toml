@@ -1,0 +1,19 @@
+[package]
+name = "ark_vrf_crust"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+# name = "ark_vrf_crust"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+cpp = { path = "../cpp" }
+ark-vrf = { git = "https://github.com/davxy/ark-vrf", rev = "bf2d1cf", features = [
+  "bandersnatch",
+  "ring",
+  "parallel",
+] }
+
+[build-dependencies]
+build-helper = { path = "../build-helper" }
