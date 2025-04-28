@@ -1,4 +1,7 @@
+use crate::log_message;
 use crate::PVMConfig;
+use crate::PVMLogLevel;
+use crate::PVMLoggerCallback;
 use polkavm::{BackendKind, Config, Engine, SandboxKind};
 use std::ptr;
 
@@ -10,8 +13,18 @@ pub struct PVMEngine {
 
 /// Initializes a PolkaVM engine with the given configuration
 #[no_mangle]
-pub unsafe extern "C" fn pvm_engine_new(config_ptr: *const PVMConfig) -> *mut PVMEngine {
+pub unsafe extern "C" fn pvm_engine_new(
+    config_ptr: *const PVMConfig,
+    logger: *const PVMLoggerCallback,
+) -> *mut PVMEngine {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
     if config_ptr.is_null() {
+        log_message(logger_ref, PVMLogLevel::Error, "Config pointer is null");
         return ptr::null_mut();
     }
 
@@ -42,17 +55,39 @@ pub unsafe extern "C" fn pvm_engine_new(config_ptr: *const PVMConfig) -> *mut PV
 
     match Engine::new(&config_rust) {
         Ok(engine) => {
+            log_message(logger_ref, PVMLogLevel::Info, "Engine created successfully");
             let engine_box = Box::new(PVMEngine { engine: engine });
             Box::into_raw(engine_box)
         }
-        Err(_) => ptr::null_mut(),
+        Err(err) => {
+            log_message(
+                logger_ref,
+                PVMLogLevel::Error,
+                &format!("Failed to create engine: {}", err),
+            );
+            ptr::null_mut()
+        }
     }
 }
 
 /// Frees memory occupied by the engine
 #[no_mangle]
-pub unsafe extern "C" fn pvm_engine_free(engine: *mut PVMEngine) {
-    if !engine.is_null() {
-        drop(Box::from_raw(engine));
+pub unsafe extern "C" fn pvm_engine_free(engine: *mut PVMEngine, logger: *const PVMLoggerCallback) {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
+    if engine.is_null() {
+        log_message(
+            logger_ref,
+            PVMLogLevel::Warning,
+            "Attempted to free null engine pointer",
+        );
+        return;
     }
+
+    log_message(logger_ref, PVMLogLevel::Info, "Freeing engine");
+    drop(Box::from_raw(engine));
 }

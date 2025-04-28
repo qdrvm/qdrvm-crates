@@ -1,5 +1,4 @@
 //! C-bindings for PolkaVM
-
 mod callbacks;
 mod engine;
 mod instance;
@@ -7,7 +6,8 @@ mod linker;
 mod module;
 
 pub use callbacks::{
-    ExternalCallCallback0, ExternalCallCallback1, ExternalCallCallback2, ExternalCallCallback3,
+    log_message, ExternalCallCallback0, ExternalCallCallback1, ExternalCallCallback2,
+    ExternalCallCallback3, PVMLogLevel, PVMLoggerCallback,
 };
 pub use engine::{pvm_engine_free, pvm_engine_new, PVMEngine};
 pub use instance::{
@@ -65,7 +65,24 @@ pub enum PVMSandbox {
 
 /// Creates a PolkaVM configuration with the specified parameters
 #[no_mangle]
-pub unsafe extern "C" fn pvm_config_create(memory_size: u32) -> *mut PVMConfig {
+pub unsafe extern "C" fn pvm_config_create(
+    memory_size: u32,
+    logger: *const PVMLoggerCallback,
+) -> *mut PVMConfig {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
+    log_message(
+        logger_ref,
+        PVMLogLevel::Info,
+        &format!(
+            "Creating configuration with memory size: {} bytes",
+            memory_size
+        ),
+    );
     let config = Box::new(PVMConfig {
         memory_size,
         allow_dynamic_paging: true,
@@ -78,42 +95,128 @@ pub unsafe extern "C" fn pvm_config_create(memory_size: u32) -> *mut PVMConfig {
 
 /// Sets whether to allow dynamic paging
 #[no_mangle]
-pub unsafe extern "C" fn pvm_config_set_allow_dynamic_paging(config: *mut PVMConfig, allow: bool) {
-    if !config.is_null() {
-        (*config).allow_dynamic_paging = allow;
+pub unsafe extern "C" fn pvm_config_set_allow_dynamic_paging(
+    config: *mut PVMConfig,
+    allow: bool,
+    logger: *const PVMLoggerCallback,
+) {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
+    if config.is_null() {
+        log_message(logger_ref, PVMLogLevel::Error, "Config pointer is null");
+        return;
     }
+
+    log_message(
+        logger_ref,
+        PVMLogLevel::Info,
+        &format!("Setting allow_dynamic_paging to: {}", allow),
+    );
+    (*config).allow_dynamic_paging = allow;
 }
 
 /// Sets the number of worker threads
 #[no_mangle]
-pub unsafe extern "C" fn pvm_config_set_worker_count(config: *mut PVMConfig, count: u32) {
-    if !config.is_null() {
-        (*config).worker_count = count;
+pub unsafe extern "C" fn pvm_config_set_worker_count(
+    config: *mut PVMConfig,
+    count: u32,
+    logger: *const PVMLoggerCallback,
+) {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
+    if config.is_null() {
+        log_message(logger_ref, PVMLogLevel::Error, "Config pointer is null");
+        return;
     }
+
+    log_message(
+        logger_ref,
+        PVMLogLevel::Info,
+        &format!("Setting worker_count to: {}", count),
+    );
+    (*config).worker_count = count;
 }
 
 /// Sets the backend type
 #[no_mangle]
-pub unsafe extern "C" fn pvm_config_set_backend(config: *mut PVMConfig, backend: PVMBackend) {
-    if !config.is_null() {
-        (*config).backend = backend as u32;
+pub unsafe extern "C" fn pvm_config_set_backend(
+    config: *mut PVMConfig,
+    backend: PVMBackend,
+    logger: *const PVMLoggerCallback,
+) {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
+    if config.is_null() {
+        log_message(logger_ref, PVMLogLevel::Error, "Config pointer is null");
+        return;
     }
+
+    log_message(
+        logger_ref,
+        PVMLogLevel::Info,
+        &format!("Setting backend to: {:?}", backend),
+    );
+    (*config).backend = backend as u32;
 }
 
 /// Sets the sandbox type
 #[no_mangle]
-pub unsafe extern "C" fn pvm_config_set_sandbox(config: *mut PVMConfig, sandbox: PVMSandbox) {
-    if !config.is_null() {
-        (*config).sandbox = sandbox as u32;
+pub unsafe extern "C" fn pvm_config_set_sandbox(
+    config: *mut PVMConfig,
+    sandbox: PVMSandbox,
+    logger: *const PVMLoggerCallback,
+) {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
+    if config.is_null() {
+        log_message(logger_ref, PVMLogLevel::Error, "Config pointer is null");
+        return;
     }
+
+    log_message(
+        logger_ref,
+        PVMLogLevel::Info,
+        &format!("Setting sandbox to: {:?}", sandbox),
+    );
+    (*config).sandbox = sandbox as u32;
 }
 
 /// Frees memory occupied by the configuration
 #[no_mangle]
-pub unsafe extern "C" fn pvm_config_free(config: *mut PVMConfig) {
-    if !config.is_null() {
-        drop(Box::from_raw(config));
+pub unsafe extern "C" fn pvm_config_free(config: *mut PVMConfig, logger: *const PVMLoggerCallback) {
+    let logger_ref = if !logger.is_null() {
+        Some(&*logger)
+    } else {
+        None
+    };
+
+    if config.is_null() {
+        log_message(
+            logger_ref,
+            PVMLogLevel::Warning,
+            "Attempted to free null config pointer",
+        );
+        return;
     }
+
+    log_message(logger_ref, PVMLogLevel::Info, "Freeing configuration");
+    drop(Box::from_raw(config));
 }
 
 #[cfg(test)]
@@ -123,9 +226,9 @@ mod tests {
     #[test]
     fn test_config_create_free() {
         unsafe {
-            let config = pvm_config_create(1024 * 1024);
+            let config = pvm_config_create(1024 * 1024, std::ptr::null());
             assert!(!config.is_null());
-            pvm_config_free(config);
+            pvm_config_free(config, std::ptr::null());
         }
     }
 }

@@ -7,7 +7,6 @@
 
 #include "pvm_bindings/pvm_bindings.h"
 
-// Обертка для автоматического управления памятью
 struct PVMConfigWrapper {
     PVMConfig* config;
     
@@ -22,7 +21,6 @@ struct PVMConfigWrapper {
         pvm_config_free(config);
     }
 
-    // Методы для настройки конфигурации
     void setAllowDynamicPaging(bool allow) {
         pvm_config_set_allow_dynamic_paging(config, allow);
     }
@@ -100,7 +98,6 @@ struct PVMInstanceWrapper {
     }
 };
 
-// Загрузка бинарного файла
 std::vector<uint8_t> loadBinaryFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if (!file) {
@@ -118,7 +115,6 @@ std::vector<uint8_t> loadBinaryFile(const std::string& filename) {
     return buffer;
 }
 
-// Пример внешней функции, которая будет вызываться из PVM
 extern "C" uint32_t example_external_function(
     uint32_t import_id,
     const uint32_t* args,
@@ -132,7 +128,6 @@ extern "C" uint32_t example_external_function(
     }
     std::cout << std::endl;
     
-    // В данном примере просто возвращаем сумму аргументов
     uint32_t sum = 0;
     for (uint32_t i = 0; i < args_count; ++i) {
         sum += args[i];
@@ -147,23 +142,19 @@ int main(int argc, char** argv) {
     }
     
     try {
-        // Загрузка бинарного файла
         std::vector<uint8_t> binary = loadBinaryFile(argv[1]);
         std::cout << "Loaded PVM binary: " << argv[1] << " (" << binary.size() << " bytes)" << std::endl;
         
-        // Создание и настройка PolkaVM
-        PVMConfigWrapper config(1024 * 1024); // 1MB памяти
+        PVMConfigWrapper config(1024 * 1024);
         
-        // Настраиваем параметры конфигурации
         config.setAllowDynamicPaging(true);
         config.setWorkerCount(1);
-        config.setBackend(PVMBackend::Compiler); // Используем компилятор
-        config.setSandbox(PVMSandbox::Linux);    // Используем Linux песочницу
+        config.setBackend(PVMBackend::Compiler);
+        config.setSandbox(PVMSandbox::Linux);
         
         PVMEngineWrapper engine(config.config);
         PVMModuleWrapper module(engine.engine, binary.data(), binary.size());
         
-        // Создание линкера и определение внешних функций
         PVMLinkerWrapper linker;
         const char* external_func_name = "example_function";
         if (!pvm_linker_define_function(
@@ -176,13 +167,11 @@ int main(int argc, char** argv) {
             throw std::runtime_error("Failed to define external function");
         }
         
-        // Создание экземпляра с линкером
         PVMInstanceWrapper instance(module.module, linker.linker);
         
-        // Вызов функции add_numbers с аргументами
         uint32_t result;
         const char* func_name = "add_numbers";
-        uint32_t args[] = {5, 7};  // Аргументы для функции
+        uint32_t args[] = {5, 7};
         
         if (!pvm_instance_call_function(
             instance.instance,
@@ -197,7 +186,6 @@ int main(int argc, char** argv) {
         
         std::cout << "Function call result: " << result << std::endl;
         
-        // Запуск VM для обработки возможных прерываний
         PVMInterruptKind interrupt;
         bool success = pvm_instance_run(instance.instance, &interrupt);
         
@@ -205,7 +193,6 @@ int main(int argc, char** argv) {
             throw std::runtime_error("VM execution failed");
         }
         
-        // Обработка прерываний
         if (interrupt.tag == PVMInterruptKind_Finished) {
             std::cout << "Program executed successfully" << std::endl;
         } else if (interrupt.tag == PVMInterruptKind_Ecalli) {
