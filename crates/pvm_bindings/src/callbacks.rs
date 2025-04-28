@@ -45,70 +45,28 @@ pub unsafe fn log_message(logger: Option<&PVMLoggerCallback>, level: PVMLogLevel
     }
 }
 
-/// Callback type for handling external calls with 3 parameters
-#[repr(C)]
-pub struct ExternalCallCallback3 {
-    pub cb: unsafe extern "C" fn(arg_1: u32, arg_2: u32, arg_3: u32) -> u32,
-    pub arg: *mut c_void,
-}
-
-impl Copy for ExternalCallCallback3 {}
-impl Clone for ExternalCallCallback3 {
-    fn clone(&self) -> Self {
-        ExternalCallCallback3 {
-            cb: self.cb.clone(),
-            arg: self.arg.clone(),
+macro_rules! define_external_call_callback {
+    ($name:ident, $($arg_name:ident: $arg_type:ty),*) => {
+        /// Callback type for handling external calls
+        #[repr(C)]
+        pub struct $name {
+            pub cb: unsafe extern "C" fn($($arg_name: $arg_type),*) -> u32,
+            pub arg: *mut c_void,
         }
-    }
-}
 
-/// Callback type for handling external calls with no parameters
-#[repr(C)]
-pub struct ExternalCallCallback0 {
-    pub cb: unsafe extern "C" fn() -> u32,
-    pub arg: *mut c_void,
-}
-
-impl Copy for ExternalCallCallback0 {}
-impl Clone for ExternalCallCallback0 {
-    fn clone(&self) -> Self {
-        ExternalCallCallback0 {
-            cb: self.cb.clone(),
-            arg: self.arg.clone(),
+        impl Copy for $name {}
+        impl Clone for $name {
+            fn clone(&self) -> Self {
+                $name {
+                    cb: self.cb.clone(),
+                    arg: self.arg.clone(),
+                }
+            }
         }
-    }
+    };
 }
 
-/// Callback type for handling external calls with 1 parameter
-#[repr(C)]
-pub struct ExternalCallCallback1 {
-    pub cb: unsafe extern "C" fn(arg_1: u32) -> u32,
-    pub arg: *mut c_void,
-}
-
-impl Copy for ExternalCallCallback1 {}
-impl Clone for ExternalCallCallback1 {
-    fn clone(&self) -> Self {
-        ExternalCallCallback1 {
-            cb: self.cb.clone(),
-            arg: self.arg.clone(),
-        }
-    }
-}
-
-/// Callback type for handling external calls with 2 parameters
-#[repr(C)]
-pub struct ExternalCallCallback2 {
-    pub cb: unsafe extern "C" fn(arg_1: u32, arg_2: u32) -> u32,
-    pub arg: *mut c_void,
-}
-
-impl Copy for ExternalCallCallback2 {}
-impl Clone for ExternalCallCallback2 {
-    fn clone(&self) -> Self {
-        ExternalCallCallback2 {
-            cb: self.cb.clone(),
-            arg: self.arg.clone(),
-        }
-    }
-}
+define_external_call_callback!(ExternalCallCallback0,);
+define_external_call_callback!(ExternalCallCallback1, arg_1: u32);
+define_external_call_callback!(ExternalCallCallback2, arg_1: u32, arg_2: u32);
+define_external_call_callback!(ExternalCallCallback3, arg_1: u32, arg_2: u32, arg_3: u32);

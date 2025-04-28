@@ -1,7 +1,5 @@
 use crate::log_message;
-use crate::PVMConfig;
-use crate::PVMLogLevel;
-use crate::PVMLoggerCallback;
+use crate::{PVMBackend, PVMConfig, PVMLogLevel, PVMLoggerCallback, PVMSandbox};
 use polkavm::{BackendKind, Config, Engine, SandboxKind};
 use std::ptr;
 
@@ -37,8 +35,8 @@ pub unsafe extern "C" fn pvm_engine_new(
 
     // Set the backend
     if let Some(backend) = match config.backend {
-        1 => Some(BackendKind::Compiler),
-        2 => Some(BackendKind::Interpreter),
+        PVMBackend::Compiler => Some(BackendKind::Compiler),
+        PVMBackend::Interpreter => Some(BackendKind::Interpreter),
         _ => None,
     } {
         config_rust.set_backend(Some(backend));
@@ -46,8 +44,8 @@ pub unsafe extern "C" fn pvm_engine_new(
 
     // Set the sandbox
     if let Some(sandbox) = match config.sandbox {
-        1 => Some(SandboxKind::Linux),
-        2 => Some(SandboxKind::Generic),
+        PVMSandbox::Linux => Some(SandboxKind::Linux),
+        PVMSandbox::Generic => Some(SandboxKind::Generic),
         _ => None,
     } {
         config_rust.set_sandbox(Some(sandbox));
