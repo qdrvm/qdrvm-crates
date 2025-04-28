@@ -34,9 +34,9 @@ pub struct PVMConfig {
     /// Number of worker threads
     pub worker_count: u32,
     /// Backend type
-    pub backend: u32,
+    pub backend: PVMBackend,
     /// Sandbox type
-    pub sandbox: u32,
+    pub sandbox: PVMSandbox,
 }
 
 /// Backend type
@@ -87,8 +87,8 @@ pub unsafe extern "C" fn pvm_config_create(
         memory_size,
         allow_dynamic_paging: true,
         worker_count: 1,
-        backend: PVMBackend::Auto as u32,
-        sandbox: PVMSandbox::Auto as u32,
+        backend: PVMBackend::Auto,
+        sandbox: PVMSandbox::Auto,
     });
     Box::into_raw(config)
 }
@@ -168,7 +168,7 @@ pub unsafe extern "C" fn pvm_config_set_backend(
         PVMLogLevel::Info,
         &format!("Setting backend to: {:?}", backend),
     );
-    (*config).backend = backend as u32;
+    (*config).backend = backend;
 }
 
 /// Sets the sandbox type
@@ -194,7 +194,7 @@ pub unsafe extern "C" fn pvm_config_set_sandbox(
         PVMLogLevel::Info,
         &format!("Setting sandbox to: {:?}", sandbox),
     );
-    (*config).sandbox = sandbox as u32;
+    (*config).sandbox = sandbox;
 }
 
 /// Frees memory occupied by the configuration
