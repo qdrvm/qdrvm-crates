@@ -41,7 +41,6 @@ function (add_rust_library CRATE_NAME)
     )
     add_dependencies(${CRATE_NAME} cargo_build)
 
-
     if (BUILD_SHARED_LIBS)
         set(PREFIXED_LIB_NAME ${CMAKE_SHARED_LIBRARY_PREFIX}${x_LIB_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
     else ()
@@ -51,12 +50,5 @@ function (add_rust_library CRATE_NAME)
     install(
         FILES "${CMAKE_BINARY_DIR}/${CRATE_NAME}/${CARGO_BUILD_TYPE}/${PREFIXED_LIB_NAME}"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-    )
-
-    configure_file(cmakeConfig.cmake.in "${CMAKE_BINARY_DIR}/${CRATE_NAME}Config.cmake" @ONLY)
-
-    install(
-        FILES "${CMAKE_BINARY_DIR}/${CRATE_NAME}Config.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${CRATE_NAME}/"
     )
 endfunction()
