@@ -4,7 +4,7 @@ project(qdrvm-crates C CXX)
 
 include(cmake/add_rust_library.cmake)
 
-list(APPEND QDRVM_ALL_CRATES schnorrkel arkworks bandersnatch_vrfs ark_vrf)
+list(APPEND QDRVM_ALL_CRATES schnorrkel arkworks bandersnatch_vrfs ark_vrf pvm_bindings)
 set(QDRVM_BIND_CRATES "" CACHE STRING "The list of crates to build or 'all'.")
 set_property(CACHE QDRVM_BIND_CRATES PROPERTY STRINGS ${QDRVM_ALL_CRATES})
 

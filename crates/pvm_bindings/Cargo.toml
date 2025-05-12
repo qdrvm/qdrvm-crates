@@ -1,0 +1,17 @@
+[package]
+name = "pvm_bindings"
+version = "0.1.0"
+authors = ["Alexander Lednev <iceseer@gmail.com>"]
+edition = "2021"
+
+[lib]
+name = "pvm_bindings_crust"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+cpp = { path = "../cpp" }
+polkavm = { version = "0.22", features = ["std"] }
+polkavm-common = "0.22"
+
+[build-dependencies]
+build-helper = { path = "../build-helper" }
