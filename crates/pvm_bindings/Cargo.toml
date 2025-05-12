@@ -5,7 +5,7 @@ authors = ["Alexander Lednev <iceseer@gmail.com>"]
 edition = "2021"
 
 [lib]
-name = "pvm_bindings"
+name = "pvm_bindings_crust"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
