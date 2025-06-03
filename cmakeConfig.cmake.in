@@ -1,3 +1,5 @@
+@PACKAGE_INIT@
+
 include(GNUInstallDirs)
 
 # Compute the installation prefix relative to this file.
@@ -8,91 +10,63 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDeb
 else ()
   set(build_type "debug")
 endif ()
-
 message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}, using ${build_type} config.")
 
-# Detect vcpkg triplet-based installation
-set(vcpkg_triplet_detected FALSE)
-if(EXISTS "${_IMPORT_PREFIX}/lib" AND EXISTS "${_IMPORT_PREFIX}/include")
-    # Standard installation layout
-    set(lib_path "${_IMPORT_PREFIX}/lib")
-    set(include_path "${_IMPORT_PREFIX}/include/")
-elseif(CMAKE_CURRENT_LIST_DIR MATCHES "([^/]+)/share")
-    # vcpkg triplet-based layout: extract triplet from path
-    string(REGEX MATCH "([^/]+)/share" _ ${CMAKE_CURRENT_LIST_DIR})
-    set(detected_triplet ${CMAKE_MATCH_1})
-    if(EXISTS "${_IMPORT_PREFIX}/${detected_triplet}/lib")
-        set(lib_path "${_IMPORT_PREFIX}/${detected_triplet}/lib")
-        set(include_path "${_IMPORT_PREFIX}/${detected_triplet}/include/")
-        set(vcpkg_triplet_detected TRUE)
-        message(STATUS "Detected vcpkg triplet layout: ${detected_triplet}")
-    endif()
+set(lib_path "${_IMPORT_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+set(shared_lib_name "${CMAKE_SHARED_LIBRARY_PREFIX}@CRATE_NAME@_crust${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(static_lib_name "${CMAKE_STATIC_LIBRARY_PREFIX}@CRATE_NAME@_crust${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(static_lib_path "${lib_path}/${static_lib_name}")
+set(shared_lib_path "${lib_path}/${shared_lib_name}")
+if(EXISTS ${shared_lib_path})
+    set(lib_path ${shared_lib_path})
+elseif(EXISTS ${static_lib_path})
+    set(lib_path ${static_lib_path})
+else()
+    message(FATAL_ERROR "@CRATE_NAME@ library (${shared_lib_name} or ${static_lib_name}) not found in ${lib_path}!")
 endif()
 
-# Fallback to CMAKE_INSTALL_* variables if no standard layout detected
-if(NOT DEFINED lib_path)
-    set(lib_path "${_IMPORT_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-    set(include_path "${_IMPORT_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/")
-endif()
-
+set(include_path ${_IMPORT_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/)
 if(NOT EXISTS ${include_path})
-    message(FATAL_ERROR "qdrvm-crates headers not found in ${include_path} !")
+    message(FATAL_ERROR "@CRATE_NAME@ headers not found in ${include_path}!")
 endif()
 
-foreach (CRATE @SELECTED_CRATES@)
-    if(NOT TARGET ${CRATE}::${CRATE})
-        set(shared_lib_name "${CMAKE_SHARED_LIBRARY_PREFIX}${CRATE}_crust${CMAKE_SHARED_LIBRARY_SUFFIX}")
-        set(static_lib_name "${CMAKE_STATIC_LIBRARY_PREFIX}${CRATE}_crust${CMAKE_STATIC_LIBRARY_SUFFIX}")
-        set(static_lib_path "${lib_path}/${static_lib_name}")
-        set(shared_lib_path "${lib_path}/${shared_lib_name}")
-        if(EXISTS ${shared_lib_path})
-            set(lib_file_path ${shared_lib_path})
-        elseif(EXISTS ${static_lib_path})
-            set(lib_file_path ${static_lib_path})
-        else()
-            message(FATAL_ERROR "${CRATE} library (${shared_lib_name} or ${static_lib_name}) not found in ${lib_path} !")
-        endif()
-    
-        add_library(${CRATE}::${CRATE} STATIC IMPORTED GLOBAL)
+if(NOT TARGET @CRATE_NAME@::@CRATE_NAME@)
+    add_library(@CRATE_NAME@::@CRATE_NAME@ STATIC IMPORTED GLOBAL)
 
-        if(EXISTS ${lib_path}/${static_lib_name})
-            if (APPLE)
-                # on apple we need to link Security
-                find_library(Security Security)
-                find_package_handle_standard_args(${CRATE}
-                    REQUIRED_VARS Security
-                    )
-                set_target_properties(${CRATE}::${CRATE} PROPERTIES
-                    INTERFACE_LINK_LIBRARIES ${Security}
-                    )
-            elseif (UNIX)
-                # on Linux we need to link pthread
-                target_link_libraries(${CRATE}::${CRATE} INTERFACE
-                    pthread
-                    -Wl,--no-as-needed
-                    dl
-                    )
-            else ()
-                message(ERROR "You've built static lib, it may not link on this platform. Come here and fix.")
-            endif ()
-        endif()
+    if(EXISTS ${_IMPORT_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${static_lib_name})
+        if (APPLE)
+            # on apple we need to link Security
+            find_library(Security Security)
+            find_package_handle_standard_args(@CRATE_NAME@
+                REQUIRED_VARS Security
+                )
+            set_target_properties(@CRATE_NAME@::@CRATE_NAME@ PROPERTIES
+                INTERFACE_LINK_LIBRARIES ${Security}
+                )
+        elseif (UNIX)
+            # on Linux we need to link pthread
+            target_link_libraries(@CRATE_NAME@::@CRATE_NAME@ INTERFACE
+                pthread
+                -Wl,--no-as-needed
+                dl
+                )
+        else ()
+            message(ERROR "You've built static lib, it may not link on this platform. Come here and fix.")
+        endif ()
+    endif()
 
-        set_target_properties(${CRATE}::${CRATE} PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES ${include_path}
-            IMPORTED_LOCATION ${lib_file_path}
-            )
+
+    set_target_properties(@CRATE_NAME@::@CRATE_NAME@ PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES ${include_path}
+        IMPORTED_LOCATION ${lib_path}
+        )
 endif()
-
-endforeach()
 
 unset(shared_lib_name)
 unset(static_lib_name)
 unset(shared_lib_path)
 unset(static_lib_path)
 unset(lib_path)
-unset(lib_file_path)
 unset(include_path)
-unset(vcpkg_triplet_detected)
-unset(detected_triplet)
 
-check_required_components(qdrvm-crates)
+check_required_components(@CRATE_NAME@)

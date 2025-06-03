@@ -27,7 +27,7 @@ if (SELECTED_CRATE_NUM EQUAL 0)
 endif()
 
 foreach (CRATE ${SELECTED_CRATES})
-    add_rust_library(${CRATE} HEADER_FILE ${PROJECT_SOURCE_DIR}/generated/include/${CRATE}/${CRATE}.h LIB_NAME ${CRATE}_crust)
+    add_rust_library(${CRATE})
 endforeach()
 
 install(
@@ -35,9 +35,8 @@ install(
     TYPE INCLUDE
 )
 
-configure_file(cmakeConfig.cmake.in "${CMAKE_BINARY_DIR}/qdrvm-cratesConfig.cmake" @ONLY)
-
-install(
-    FILES "${CMAKE_BINARY_DIR}/qdrvm-cratesConfig.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/qdrvm-crates/"
+add_library(qdrvm-crates INTERFACE)
+install(TARGETS qdrvm-crates EXPORT qdrvm-crates-config)
+install(EXPORT qdrvm-crates-config
+    DESTINATION share/qdrvm-crates
 )
