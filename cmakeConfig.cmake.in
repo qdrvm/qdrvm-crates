@@ -11,9 +11,30 @@ endif ()
 
 message(STATUS "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}, using ${build_type} config.")
 
-set(lib_path "${_IMPORT_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+# Detect vcpkg triplet-based installation
+set(vcpkg_triplet_detected FALSE)
+if(EXISTS "${_IMPORT_PREFIX}/lib" AND EXISTS "${_IMPORT_PREFIX}/include")
+    # Standard installation layout
+    set(lib_path "${_IMPORT_PREFIX}/lib")
+    set(include_path "${_IMPORT_PREFIX}/include/")
+elseif(CMAKE_CURRENT_LIST_DIR MATCHES "([^/]+)/share")
+    # vcpkg triplet-based layout: extract triplet from path
+    string(REGEX MATCH "([^/]+)/share" _ ${CMAKE_CURRENT_LIST_DIR})
+    set(detected_triplet ${CMAKE_MATCH_1})
+    if(EXISTS "${_IMPORT_PREFIX}/${detected_triplet}/lib")
+        set(lib_path "${_IMPORT_PREFIX}/${detected_triplet}/lib")
+        set(include_path "${_IMPORT_PREFIX}/${detected_triplet}/include/")
+        set(vcpkg_triplet_detected TRUE)
+        message(STATUS "Detected vcpkg triplet layout: ${detected_triplet}")
+    endif()
+endif()
 
-set(include_path ${_IMPORT_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/)
+# Fallback to CMAKE_INSTALL_* variables if no standard layout detected
+if(NOT DEFINED lib_path)
+    set(lib_path "${_IMPORT_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    set(include_path "${_IMPORT_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/")
+endif()
+
 if(NOT EXISTS ${include_path})
     message(FATAL_ERROR "qdrvm-crates headers not found in ${include_path} !")
 endif()
@@ -34,7 +55,7 @@ foreach (CRATE @SELECTED_CRATES@)
     
         add_library(${CRATE}::${CRATE} STATIC IMPORTED GLOBAL)
 
-        if(EXISTS ${_IMPORT_PREFIX}/${CMAKE_INSTALL_LIBDIR}/${static_lib_name})
+        if(EXISTS ${lib_path}/${static_lib_name})
             if (APPLE)
                 # on apple we need to link Security
                 find_library(Security Security)
@@ -71,5 +92,7 @@ unset(static_lib_path)
 unset(lib_path)
 unset(lib_file_path)
 unset(include_path)
+unset(vcpkg_triplet_detected)
+unset(detected_triplet)
 
 check_required_components(qdrvm-crates)
