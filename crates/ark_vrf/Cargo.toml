@@ -9,7 +9,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 cpp = { path = "../cpp" }
-ark-vrf = { git = "https://github.com/davxy/ark-vrf", rev = "bf2d1cf", features = [
+ark-vrf = { git = "https://github.com/davxy/ark-vrf", rev = "29e53a0", features = [
   "bandersnatch",
   "ring",
   "parallel",
