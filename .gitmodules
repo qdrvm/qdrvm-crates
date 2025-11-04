@@ -1,4 +1,4 @@
-[submodule "crates/c-hash-sig"]
-	path = crates/c-hash-sig
+[submodule "crates/c_hash_sig"]
+	path = crates/c_hash_sig
 	url = https://github.com/qdrvm/c-hash-sig
 	branch = crates-submodule
