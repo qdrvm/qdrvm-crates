@@ -27,7 +27,12 @@ if (SELECTED_CRATE_NUM EQUAL 0)
 endif()
 
 foreach (CRATE ${SELECTED_CRATES})
-    add_rust_library(${CRATE} HEADER_FILE ${PROJECT_SOURCE_DIR}/generated/include/${CRATE}/${CRATE}.h LIB_NAME ${CRATE}_crust)
+    # Add kagome-crates feature for c_hash_sig to enable build-helper
+    if (CRATE STREQUAL "c_hash_sig")
+        add_rust_library(${CRATE} HEADER_FILE ${PROJECT_SOURCE_DIR}/generated/include/${CRATE}/${CRATE}.h LIB_NAME ${CRATE}_crust FEATURES "kagome-crates")
+    else()
+        add_rust_library(${CRATE} HEADER_FILE ${PROJECT_SOURCE_DIR}/generated/include/${CRATE}/${CRATE}.h LIB_NAME ${CRATE}_crust)
+    endif()
 endforeach()
 
 install(

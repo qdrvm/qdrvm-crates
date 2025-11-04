@@ -16,15 +16,21 @@ endif ()
 set(CRATES_DIR "${PROJECT_SOURCE_DIR}/crates")
 
 function (add_rust_library CRATE_NAME)
-    cmake_parse_arguments(x "" "HEADER_FILE;LIB_NAME" "" ${ARGV})
+    cmake_parse_arguments(x "" "HEADER_FILE;LIB_NAME;FEATURES" "" ${ARGV})
     message(STATUS HEADER_FILE: ${x_HEADER_FILE})
     message(STATUS LIB_NAME: ${x_LIB_NAME})
+
+    # Add features if specified
+    if (x_FEATURES)
+        set(CARGO_FEATURES "--features" "${x_FEATURES}")
+    endif()
 
     set(CARGO_COMMAND "${CMAKE_COMMAND}" -E env 
             HEADER_FILE="${x_HEADER_FILE}" CBINDGEN_CONFIG="${PROJECT_SOURCE_DIR}/cbindgen.toml" 
         cargo build 
             --target-dir "${CMAKE_BINARY_DIR}/${CRATE_NAME}" 
-            ${CARGO_BUILD_OPTION})
+            ${CARGO_BUILD_OPTION}
+            ${CARGO_FEATURES})
     message(STATUS ${CARGO_COMMAND})
     add_custom_target(
         "cargo_build_${CRATE_NAME}"
