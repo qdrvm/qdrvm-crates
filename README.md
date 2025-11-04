@@ -1,6 +1,17 @@
 # Kagome Rust Dependencies
 This repo contains wrappers for rust library which KAGOME uses. 
 The crates in crates/ dir declare C API wrappers for Rust libraries and use cbindgen to generate an actual C header.
+
+## Setup
+When cloning this repository, make sure to initialize submodules:
+```bash
+git clone --recurse-submodules https://github.com/qdrvm/kagome-crates.git
+```
+
+Or if you've already cloned the repository:
+```bash
+git submodule update --init --recursive
+```
 They need to be in the same CMake project so that Hunter, KAGOME's package manager, always builds them all with the same Rust compiler, otherwise conflicts in Rust runtime symbols happen when linking.
 In case any of those are required in projects other than KAGOME, this repo may be repurposed in one of the following ways:
  - Extract the following to a separate repo and use it as a dependency here and for the new project:
