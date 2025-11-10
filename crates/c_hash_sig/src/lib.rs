@@ -543,7 +543,7 @@ pub unsafe extern "C" fn pq_signature_serialize(
         Ok(bytes) => {
             if bytes.len() > buffer_len {
                 *written_len = bytes.len();
-                return PQSigningError::UnknownError; // Буфер слишком мал
+                return PQSigningError::UnknownError; // Buffer too small
             }
             let buffer_slice = slice::from_raw_parts_mut(buffer, buffer_len);
             buffer_slice[..bytes.len()].copy_from_slice(&bytes);
