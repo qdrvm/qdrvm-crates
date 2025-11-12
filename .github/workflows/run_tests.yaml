@@ -21,9 +21,9 @@ jobs:
           path: |
             build
             build-debug
-          key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+          key: ${{ runner.os }}-qdrvm-build-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |
-            ${{ runner.os }}-build-
+            ${{ runner.os }}-qdrvm-build-
 
       - name: Build test
         working-directory: .ci
