@@ -8,6 +8,12 @@ run_build() {
 
   echo "Building with BUILD_TYPE=$build_type..."
   
+  # # Clean build directory if CMakeCache.txt exists to avoid stale cache issues
+  # if [ -f "$build_dir/CMakeCache.txt" ]; then
+  #   echo "Removing stale CMakeCache.txt from $build_dir..."
+  #   rm -rf "$build_dir"
+  # fi
+  
   make -B build BUILD_TYPE="$build_type" BUILD_DIR="$build_dir" CRATES=all
   
   if [ $? -ne 0 ]; then
