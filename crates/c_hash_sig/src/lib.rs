@@ -590,6 +590,84 @@ pub unsafe extern "C" fn pq_signature_deserialize(
     }
 }
 
+// ============================================================================
+// JSON deserialization functions
+// ============================================================================
+
+/// Deserialize public key from JSON string
+///
+/// # Parameters
+/// - `json_str`: null-terminated JSON string
+/// - `pk_out`: pointer to write public key (output)
+///
+/// # Returns
+/// Error code
+///
+/// # Safety
+/// json_str must be a valid null-terminated C string
+#[no_mangle]
+pub unsafe extern "C" fn pq_public_key_from_json(
+    json_str: *const c_char,
+    pk_out: *mut *mut PQSignatureSchemePublicKey,
+) -> PQSigningError {
+    if json_str.is_null() || pk_out.is_null() {
+        return PQSigningError::InvalidPointer;
+    }
+
+    let c_str = match std::ffi::CStr::from_ptr(json_str).to_str() {
+        Ok(s) => s,
+        Err(_) => return PQSigningError::UnknownError,
+    };
+
+    match serde_json::from_str::<PublicKeyType>(c_str) {
+        Ok(pk) => {
+            let pk_wrapper = Box::new(PQSignatureSchemePublicKeyInner {
+                inner: Box::new(pk),
+            });
+            *pk_out = Box::into_raw(pk_wrapper) as *mut PQSignatureSchemePublicKey;
+            PQSigningError::Success
+        }
+        Err(_) => PQSigningError::UnknownError,
+    }
+}
+
+/// Deserialize secret key from JSON string
+///
+/// # Parameters
+/// - `json_str`: null-terminated JSON string
+/// - `sk_out`: pointer to write secret key (output)
+///
+/// # Returns
+/// Error code
+///
+/// # Safety
+/// json_str must be a valid null-terminated C string
+#[no_mangle]
+pub unsafe extern "C" fn pq_secret_key_from_json(
+    json_str: *const c_char,
+    sk_out: *mut *mut PQSignatureSchemeSecretKey,
+) -> PQSigningError {
+    if json_str.is_null() || sk_out.is_null() {
+        return PQSigningError::InvalidPointer;
+    }
+
+    let c_str = match std::ffi::CStr::from_ptr(json_str).to_str() {
+        Ok(s) => s,
+        Err(_) => return PQSigningError::UnknownError,
+    };
+
+    match serde_json::from_str::<SecretKeyType>(c_str) {
+        Ok(sk) => {
+            let sk_wrapper = Box::new(PQSignatureSchemeSecretKeyInner {
+                inner: Box::new(sk),
+            });
+            *sk_out = Box::into_raw(sk_wrapper) as *mut PQSignatureSchemeSecretKey;
+            PQSigningError::Success
+        }
+        Err(_) => PQSigningError::UnknownError,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
