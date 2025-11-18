@@ -4,12 +4,12 @@ use std::os::raw::{c_char, c_int};
 use std::ptr;
 use std::slice;
 
-use hashsig::signature::generalized_xmss::instantiations_sha::lifetime_2_to_the_18::winternitz::SIGWinternitzLifetime18W4;
+use hashsig::signature::generalized_xmss::instantiations_poseidon_top_level::lifetime_2_to_the_32::hashing_optimized::SIGTopLevelTargetSumLifetime32Dim64Base8;
 use hashsig::signature::{SignatureScheme, SignatureSchemeSecretKey};
 use hashsig::MESSAGE_LENGTH;
 
 // Type aliases for convenience
-type SignatureSchemeType = SIGWinternitzLifetime18W4;
+type SignatureSchemeType = SIGTopLevelTargetSumLifetime32Dim64Base8;
 type PublicKeyType = <SignatureSchemeType as SignatureScheme>::PublicKey;
 type SecretKeyType = <SignatureSchemeType as SignatureScheme>::SecretKey;
 type SignatureType = <SignatureSchemeType as SignatureScheme>::Signature;
@@ -896,7 +896,7 @@ mod tests {
     #[test]
     fn test_get_lifetime() {
         let lifetime = pq_get_lifetime();
-        assert_eq!(lifetime, 262144); // 2^18
+        assert_eq!(lifetime, 4294967296); // 2^32
     }
 
     #[test]
