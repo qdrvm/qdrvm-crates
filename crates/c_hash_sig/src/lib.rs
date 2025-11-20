@@ -398,7 +398,7 @@ pub unsafe extern "C" fn pq_secret_key_serialize(
     let sk = &*(sk as *const PQSignatureSchemeSecretKeyInner);
     
     // Use bincode for serialization
-    match bincode::serde::encode_to_vec(&*sk.inner, bincode::config::standard()) {
+    match bincode::serde::encode_to_vec(&*sk.inner, bincode::config::standard().with_fixed_int_encoding()) {
         Ok(bytes) => {
             if bytes.len() > buffer_len {
                 *written_len = bytes.len();
@@ -437,7 +437,7 @@ pub unsafe extern "C" fn pq_secret_key_deserialize(
 
     let buffer_slice = slice::from_raw_parts(buffer, buffer_len);
     
-    match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard()) {
+    match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard().with_fixed_int_encoding()) {
         Ok((sk, _)) => {
             let sk_wrapper = Box::new(PQSignatureSchemeSecretKeyInner {
                 inner: Box::new(sk),
@@ -475,7 +475,7 @@ pub unsafe extern "C" fn pq_public_key_serialize(
 
     let pk = &*(pk as *const PQSignatureSchemePublicKeyInner);
     
-    match bincode::serde::encode_to_vec(&*pk.inner, bincode::config::standard()) {
+    match bincode::serde::encode_to_vec(&*pk.inner, bincode::config::standard().with_fixed_int_encoding()) {
         Ok(bytes) => {
             if bytes.len() > buffer_len {
                 *written_len = bytes.len();
@@ -514,7 +514,7 @@ pub unsafe extern "C" fn pq_public_key_deserialize(
 
     let buffer_slice = slice::from_raw_parts(buffer, buffer_len);
     
-    match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard()) {
+    match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard().with_fixed_int_encoding()) {
         Ok((pk, _)) => {
             let pk_wrapper = Box::new(PQSignatureSchemePublicKeyInner {
                 inner: Box::new(pk),
@@ -552,7 +552,7 @@ pub unsafe extern "C" fn pq_signature_serialize(
 
     let signature = &*(signature as *const PQSignatureInner);
     
-    match bincode::serde::encode_to_vec(&*signature.inner, bincode::config::standard()) {
+    match bincode::serde::encode_to_vec(&*signature.inner, bincode::config::standard().with_fixed_int_encoding()) {
         Ok(bytes) => {
             if bytes.len() > buffer_len {
                 *written_len = bytes.len();
@@ -591,7 +591,7 @@ pub unsafe extern "C" fn pq_signature_deserialize(
 
     let buffer_slice = slice::from_raw_parts(buffer, buffer_len);
     
-    match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard()) {
+    match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard().with_fixed_int_encoding()) {
         Ok((signature, _)) => {
             let sig_wrapper = Box::new(PQSignatureInner {
                 inner: Box::new(signature),
