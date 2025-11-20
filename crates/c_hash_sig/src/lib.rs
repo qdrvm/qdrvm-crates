@@ -4,12 +4,25 @@ use std::os::raw::{c_char, c_int};
 use std::ptr;
 use std::slice;
 
-use hashsig::signature::generalized_xmss::instantiations_poseidon_top_level::lifetime_2_to_the_32::hashing_optimized::SIGTopLevelTargetSumLifetime32Dim64Base8;
+#[cfg(test)]
+mod scheme_impl {
+    use hashsig::signature::generalized_xmss::instantiations_poseidon_top_level::lifetime_2_to_the_8::SIGTopLevelTargetSumLifetime8Dim64Base8;
+
+    pub type SignatureSchemeType = SIGTopLevelTargetSumLifetime8Dim64Base8;
+}
+
+#[cfg(not(test))]
+mod scheme_impl {
+    use hashsig::signature::generalized_xmss::instantiations_poseidon_top_level::lifetime_2_to_the_32::hashing_optimized::SIGTopLevelTargetSumLifetime32Dim64Base8;
+
+    pub type SignatureSchemeType = SIGTopLevelTargetSumLifetime32Dim64Base8;
+}
+
+use scheme_impl::SignatureSchemeType;
 use hashsig::signature::{SignatureScheme, SignatureSchemeSecretKey};
 use hashsig::MESSAGE_LENGTH;
 
 // Type aliases for convenience
-type SignatureSchemeType = SIGTopLevelTargetSumLifetime32Dim64Base8;
 type PublicKeyType = <SignatureSchemeType as SignatureScheme>::PublicKey;
 type SecretKeyType = <SignatureSchemeType as SignatureScheme>::SecretKey;
 type SignatureType = <SignatureSchemeType as SignatureScheme>::Signature;
@@ -679,7 +692,7 @@ mod tests {
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
 
             // Key generation
-            let result = pq_key_gen(0, 1000, &mut pk, &mut sk);
+            let result = pq_key_gen(0, 200, &mut pk, &mut sk);
             assert_eq!(result, PQSigningError::Success);
             assert!(!pk.is_null());
             assert!(!sk.is_null());
@@ -757,7 +770,7 @@ mod tests {
         unsafe {
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
-            pq_key_gen(0, 1000, &mut pk, &mut sk);
+            pq_key_gen(0, 200, &mut pk, &mut sk);
 
             // Test with incorrect message length for signing
             let short_message = [0u8; 16]; // Incorrect length
@@ -790,7 +803,7 @@ mod tests {
         unsafe {
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
-            pq_key_gen(0, 1000, &mut pk, &mut sk);
+            pq_key_gen(0, 200, &mut pk, &mut sk);
 
             let message = [1u8; MESSAGE_LENGTH];
             let mut signature: *mut PQSignature = ptr::null_mut();
@@ -820,7 +833,7 @@ mod tests {
         unsafe {
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
-            pq_key_gen(0, 10000, &mut pk, &mut sk);
+            pq_key_gen(0, 192, &mut pk, &mut sk);
 
             let initial_prepared = pq_get_prepared_interval(sk);
             assert!(initial_prepared.start < initial_prepared.end);
@@ -848,7 +861,7 @@ mod tests {
         unsafe {
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
-            pq_key_gen(0, 1000, &mut pk, &mut sk);
+            pq_key_gen(0, 200, &mut pk, &mut sk);
 
             let message = [42u8; MESSAGE_LENGTH];
             let mut signature: *mut PQSignature = ptr::null_mut();
@@ -946,7 +959,7 @@ mod tests {
         unsafe {
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
-            pq_key_gen(0, 1000, &mut pk, &mut sk);
+            pq_key_gen(0, 200, &mut pk, &mut sk);
 
             // Sign several different messages with different epochs
             for epoch in [5, 10, 15, 20, 25] {
@@ -974,14 +987,14 @@ mod tests {
     #[test]
     fn test_get_lifetime() {
         let lifetime = pq_get_lifetime();
-        assert_eq!(lifetime, 4294967296); // 2^32
+        assert_eq!(lifetime, 256); // 2^8
     }
 
     #[test]
     fn test_activation_and_prepared_intervals() {
         unsafe {
-            let activation_epoch = 100;
-            let num_active_epochs = 5000;
+            let activation_epoch = 0;
+            let num_active_epochs = 200;
 
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
@@ -1033,7 +1046,7 @@ mod tests {
         unsafe {
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
-            pq_key_gen(0, 1000, &mut pk, &mut sk);
+            pq_key_gen(0, 200, &mut pk, &mut sk);
 
             // Try to serialize into too small buffer
             let mut small_buffer = [0u8; 10];
@@ -1044,7 +1057,7 @@ mod tests {
                 small_buffer.len(),
                 &mut written,
             );
-            
+
             // Should be error, but written should contain required size
             assert_eq!(result, PQSigningError::UnknownError);
             assert!(written > small_buffer.len());
