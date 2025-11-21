@@ -1042,6 +1042,67 @@ mod tests {
     }
 
     #[test]
+    // #[cfg(not(test))]
+    fn test_public_key_json_deserialization_lifetime32() {
+        use std::ffi::CString;
+        
+        let json = r#"{
+  "root": [
+    227456853,
+    1463530671,
+    1004245254,
+    894145477,
+    1555036206,
+    780627728,
+    1559453783,
+    23977525
+  ],
+  "parameter": [
+    1732673242,
+    873131288,
+    391672736,
+    1837524665,
+    1051820738
+  ]
+}"#;
+
+        let expected_bytes: [u8; 47] = [
+            0x55, 0xb7, 0x8e, 0x0d, 0xaf, 0xb4, 0x3b, 0x57,
+            0x06, 0x91, 0xdb, 0x3b, 0xc5, 0x93, 0x4b, 0x35,
+            0x2e, 0xf8, 0xaf, 0x5c, 0x10, 0x6f, 0x87, 0x2e,
+            0x57, 0x60, 0xf3, 0x5c, 0x35, 0xde, 0x6d, 0x01,
+            0xda, 0x7e, 0x46, 0x67, 0x18, 0xed, 0x0a, 0x34,
+            0xa0, 0x73, 0x58, 0x17, 0xb9, 0x66, 0x86,
+        ];
+
+        unsafe {
+            let json_cstr = CString::new(json).unwrap();
+            let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
+            
+            let result = pq_public_key_from_json(json_cstr.as_ptr(), &mut pk);
+            assert_eq!(result, PQSigningError::Success);
+            assert!(!pk.is_null());
+
+            // Serialize the public key to check its bytes
+            let mut buffer = vec![0u8; 1000];
+            let mut written = 0;
+            let result = pq_public_key_serialize(
+                pk,
+                buffer.as_mut_ptr(),
+                buffer.len(),
+                &mut written,
+            );
+            assert_eq!(result, PQSigningError::Success);
+            
+            // Check that the serialized key matches expected bytes
+            // The exact format may include additional metadata, so we check the key data
+            assert_eq!(&buffer[..expected_bytes.len()], &expected_bytes[..]);
+
+            pq_public_key_free(pk);
+        }
+    }
+
+    #[test]
     fn test_serialization_buffer_too_small() {
         unsafe {
             let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
