@@ -1,6 +1,6 @@
 use std::ffi::CString;
 use std::ops::Range;
-use std::os::raw::{c_char, c_int};
+use std::os::raw::{c_char, c_int, c_uchar};
 use std::ptr;
 use std::slice;
 
@@ -103,6 +103,26 @@ pub enum PQSigningError {
     InvalidMessageLength = 3,
     /// Unknown error
     UnknownError = 99,
+}
+
+#[repr(C)]
+pub struct PQByteVec {
+    pub data: *mut c_uchar,
+    pub size: usize,
+}
+impl PQByteVec {
+    fn new(bytes: &[u8]) -> Self {
+        let mut vec = bytes.to_vec();
+        assert_eq!(vec.capacity(), vec.len());
+        let data = vec.as_mut_ptr();
+        std::mem::forget(vec);
+        Self { data, size: bytes.len() }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn PQByteVec_drop(bytes: PQByteVec) {
+    drop(Vec::from_raw_parts(bytes.data, bytes.size, bytes.size))
 }
 
 // ============================================================================
@@ -670,6 +690,26 @@ pub unsafe extern "C" fn pq_secret_key_from_json(
         }
         Err(_) => PQSigningError::UnknownError,
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn pq_secret_key_to_json(
+    key: *const PQSignatureSchemeSecretKey,
+) -> PQByteVec {
+    assert!(!key.is_null());
+    let key = &*(key as *const PQSignatureSchemeSecretKeyInner);
+    let json = serde_json::to_string(&key.inner).unwrap();
+    PQByteVec::new(json.as_ref())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn pq_public_key_to_json(
+    key: *const PQSignatureSchemePublicKey,
+) -> PQByteVec {
+    assert!(!key.is_null());
+    let key = &*(key as *const PQSignatureSchemePublicKeyInner);
+    let json = serde_json::to_string(&key.inner).unwrap();
+    PQByteVec::new(json.as_ref())
 }
 
 #[cfg(test)]
