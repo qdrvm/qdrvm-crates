@@ -21,11 +21,20 @@ mod scheme_impl {
 use scheme_impl::SignatureSchemeType;
 use hashsig::signature::{SignatureScheme, SignatureSchemeSecretKey};
 use hashsig::MESSAGE_LENGTH;
+use ssz::Decode;
+use ssz::Encode;
 
 // Type aliases for convenience
 type PublicKeyType = <SignatureSchemeType as SignatureScheme>::PublicKey;
 type SecretKeyType = <SignatureSchemeType as SignatureScheme>::SecretKey;
 type SignatureType = <SignatureSchemeType as SignatureScheme>::Signature;
+
+pub const PQ_PUBLIC_KEY_SIZE: usize = 52;
+
+#[cfg(not(test))]
+pub const PQ_SIGNATURE_SIZE: usize = 3116;
+#[cfg(test)]
+pub const PQ_SIGNATURE_SIZE: usize = 2348;
 
 /// Wrapper for signature scheme secret key
 /// 
@@ -466,28 +475,18 @@ pub unsafe extern "C" fn pq_secret_key_deserialize(
 pub unsafe extern "C" fn pq_public_key_serialize(
     pk: *const PQSignatureSchemePublicKey,
     buffer: *mut u8,
-    buffer_len: usize,
-    written_len: *mut usize,
 ) -> PQSigningError {
-    if pk.is_null() || buffer.is_null() || written_len.is_null() {
+    if pk.is_null() || buffer.is_null() {
         return PQSigningError::InvalidPointer;
     }
 
     let pk = &*(pk as *const PQSignatureSchemePublicKeyInner);
     
-    match bincode::serde::encode_to_vec(&*pk.inner, bincode::config::standard().with_fixed_int_encoding()) {
-        Ok(bytes) => {
-            if bytes.len() > buffer_len {
-                *written_len = bytes.len();
-                return PQSigningError::UnknownError; // Буфер слишком мал
-            }
-            let buffer_slice = slice::from_raw_parts_mut(buffer, buffer_len);
-            buffer_slice[..bytes.len()].copy_from_slice(&bytes);
-            *written_len = bytes.len();
-            PQSigningError::Success
-        }
-        Err(_) => PQSigningError::UnknownError,
-    }
+    let bytes = pk.inner.as_ssz_bytes();
+    assert_eq!(bytes.len(), PQ_PUBLIC_KEY_SIZE);
+    let buffer_slice = slice::from_raw_parts_mut(buffer, PQ_PUBLIC_KEY_SIZE);
+    buffer_slice.copy_from_slice(&bytes);
+    PQSigningError::Success
 }
 
 /// Deserialize public key from bytes
@@ -505,17 +504,16 @@ pub unsafe extern "C" fn pq_public_key_serialize(
 #[no_mangle]
 pub unsafe extern "C" fn pq_public_key_deserialize(
     buffer: *const u8,
-    buffer_len: usize,
     pk_out: *mut *mut PQSignatureSchemePublicKey,
 ) -> PQSigningError {
     if buffer.is_null() || pk_out.is_null() {
         return PQSigningError::InvalidPointer;
     }
 
-    let buffer_slice = slice::from_raw_parts(buffer, buffer_len);
-    
-    match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard().with_fixed_int_encoding()) {
-        Ok((pk, _)) => {
+    let buffer_slice = slice::from_raw_parts(buffer, PQ_PUBLIC_KEY_SIZE);
+
+    match PublicKeyType::from_ssz_bytes(buffer_slice) {
+        Ok(pk) => {
             let pk_wrapper = Box::new(PQSignatureSchemePublicKeyInner {
                 inner: Box::new(pk),
             });
@@ -543,10 +541,8 @@ pub unsafe extern "C" fn pq_public_key_deserialize(
 pub unsafe extern "C" fn pq_signature_serialize(
     signature: *const PQSignature,
     buffer: *mut u8,
-    buffer_len: usize,
-    written_len: *mut usize,
 ) -> PQSigningError {
-    if signature.is_null() || buffer.is_null() || written_len.is_null() {
+    if signature.is_null() || buffer.is_null() {
         return PQSigningError::InvalidPointer;
     }
 
@@ -554,13 +550,9 @@ pub unsafe extern "C" fn pq_signature_serialize(
     
     match bincode::serde::encode_to_vec(&*signature.inner, bincode::config::standard().with_fixed_int_encoding()) {
         Ok(bytes) => {
-            if bytes.len() > buffer_len {
-                *written_len = bytes.len();
-                return PQSigningError::UnknownError; // Buffer too small
-            }
-            let buffer_slice = slice::from_raw_parts_mut(buffer, buffer_len);
-            buffer_slice[..bytes.len()].copy_from_slice(&bytes);
-            *written_len = bytes.len();
+            assert_eq!(bytes.len(), PQ_SIGNATURE_SIZE);
+            let buffer_slice = slice::from_raw_parts_mut(buffer, PQ_SIGNATURE_SIZE);
+            buffer_slice.copy_from_slice(&bytes);
             PQSigningError::Success
         }
         Err(_) => PQSigningError::UnknownError,
@@ -582,14 +574,13 @@ pub unsafe extern "C" fn pq_signature_serialize(
 #[no_mangle]
 pub unsafe extern "C" fn pq_signature_deserialize(
     buffer: *const u8,
-    buffer_len: usize,
     signature_out: *mut *mut PQSignature,
 ) -> PQSigningError {
     if buffer.is_null() || signature_out.is_null() {
         return PQSigningError::InvalidPointer;
     }
 
-    let buffer_slice = slice::from_raw_parts(buffer, buffer_len);
+    let buffer_slice = slice::from_raw_parts(buffer, PQ_SIGNATURE_SIZE);
     
     match bincode::serde::decode_from_slice(buffer_slice, bincode::config::standard().with_fixed_int_encoding()) {
         Ok((signature, _)) => {
@@ -868,21 +859,16 @@ mod tests {
             pq_sign(sk, 10, message.as_ptr(), MESSAGE_LENGTH, &mut signature);
 
             // Test public key serialization/deserialization
-            let mut pk_buffer = vec![0u8; 10000];
-            let mut pk_written = 0;
+            let mut pk_buffer = vec![0u8; PQ_PUBLIC_KEY_SIZE];
             let result = pq_public_key_serialize(
                 pk,
                 pk_buffer.as_mut_ptr(),
-                pk_buffer.len(),
-                &mut pk_written,
             );
             assert_eq!(result, PQSigningError::Success);
-            assert!(pk_written > 0);
 
             let mut pk_restored: *mut PQSignatureSchemePublicKey = ptr::null_mut();
             let result = pq_public_key_deserialize(
                 pk_buffer.as_ptr(),
-                pk_written,
                 &mut pk_restored,
             );
             assert_eq!(result, PQSigningError::Success);
@@ -919,21 +905,16 @@ mod tests {
             assert_eq!(result, PQSigningError::Success);
 
             // Test signature serialization/deserialization
-            let mut sig_buffer = vec![0u8; 100000];
-            let mut sig_written = 0;
+            let mut sig_buffer = vec![0u8; PQ_SIGNATURE_SIZE];
             let result = pq_signature_serialize(
                 signature,
                 sig_buffer.as_mut_ptr(),
-                sig_buffer.len(),
-                &mut sig_written,
             );
             assert_eq!(result, PQSigningError::Success);
-            assert!(sig_written > 0);
 
             let mut sig_restored: *mut PQSignature = ptr::null_mut();
             let result = pq_signature_deserialize(
                 sig_buffer.as_ptr(),
-                sig_written,
                 &mut sig_restored,
             );
             assert_eq!(result, PQSigningError::Success);
@@ -1084,13 +1065,10 @@ mod tests {
             assert!(!pk.is_null());
 
             // Serialize the public key to check its bytes
-            let mut buffer = vec![0u8; 1000];
-            let mut written = 0;
+            let mut buffer = vec![0u8; PQ_PUBLIC_KEY_SIZE];
             let result = pq_public_key_serialize(
                 pk,
                 buffer.as_mut_ptr(),
-                buffer.len(),
-                &mut written,
             );
             assert_eq!(result, PQSigningError::Success);
             
@@ -1099,32 +1077,6 @@ mod tests {
             assert_eq!(&buffer[..expected_bytes.len()], &expected_bytes[..]);
 
             pq_public_key_free(pk);
-        }
-    }
-
-    #[test]
-    fn test_serialization_buffer_too_small() {
-        unsafe {
-            let mut pk: *mut PQSignatureSchemePublicKey = ptr::null_mut();
-            let mut sk: *mut PQSignatureSchemeSecretKey = ptr::null_mut();
-            pq_key_gen(0, 200, &mut pk, &mut sk);
-
-            // Try to serialize into too small buffer
-            let mut small_buffer = [0u8; 10];
-            let mut written = 0;
-            let result = pq_public_key_serialize(
-                pk,
-                small_buffer.as_mut_ptr(),
-                small_buffer.len(),
-                &mut written,
-            );
-
-            // Should be error, but written should contain required size
-            assert_eq!(result, PQSigningError::UnknownError);
-            assert!(written > small_buffer.len());
-
-            pq_public_key_free(pk);
-            pq_secret_key_free(sk);
         }
     }
 }
