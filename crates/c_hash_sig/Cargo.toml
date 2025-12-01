@@ -8,7 +8,7 @@ name = "c_hash_sig_crust"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-hashsig = { git = "https://github.com/leanEthereum/leanSig", package = "leansig" }
+hashsig = { git = "https://github.com/leanEthereum/leanSig", package = "leansig", rev = "f10dcbefac2502d356d93f686e8b4ecd8dc8840a" }
 rand = "0.9"
 bincode = { version = "2.0.1", features = ["serde"] }
 serde_json = "1.0"
