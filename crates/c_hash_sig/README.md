@@ -132,9 +132,15 @@ All messages must be **exactly 32 bytes**. To sign longer messages, first use a 
 ## Scheme Parameters
 
 Current implementation uses:
-- **Scheme**: Generalized XMSS (Winternitz encoding, w=4)
-- **Hash function**: SHA-3 (SHAKE)
-- **Lifetime**: 2^18 epochs (262,144 epochs)
+- **Scheme**: Generalized XMSS (Target Sum encoding)
+- **Scheme alias**: `SIGTopLevelTargetSumLifetime32Dim64Base8`
+- **Hash function**: Poseidon2 (ZK-friendly)
+- **Encoding**: Target Sum
+- **Dimension**: 64
+- **Base**: 8
+- **Final Layer**: 77
+- **Target Sum**: 375
+- **Lifetime**: 2^32 epochs (4,294,967,296 epochs)
 - **Message length**: 32 bytes
 
 ## Project Statistics
