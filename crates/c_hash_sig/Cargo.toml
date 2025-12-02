@@ -8,11 +8,10 @@ name = "c_hash_sig_crust"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
+cpp = { path = "../cpp" }
 leansig = { git = "https://github.com/leanEthereum/leanSig", rev = "1f8763951c55e5575c9bb9827cf6031005a4bee6" }
 rand = "0.9"
 serde_json = "1.0"
-ssz = { package = "ethereum_ssz", version = "0.10.0" }
-cpp = { path = "../cpp" }
 
 [build-dependencies]
 build-helper = { path = "../build-helper" }
