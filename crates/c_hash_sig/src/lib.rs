@@ -160,6 +160,17 @@ unsafe fn from_bytes<T: Opaque<Type = impl Serializable>>(
     PQSigningError::Success
 }
 
+unsafe fn many_from_bytes<T: Serializable>(
+    ptr: *const *const u8,
+    count: usize,
+    item_size: usize,
+) -> Option<Vec<T>> {
+    from_raw_parts(ptr, count)
+        .into_iter()
+        .map(|ptr| T::from_bytes(from_raw_parts(*ptr, item_size)).ok())
+        .collect()
+}
+
 // ============================================================================
 // Memory management functions
 // ============================================================================
@@ -510,6 +521,69 @@ pub unsafe extern "C" fn pq_secret_key_to_json(secret_key: *const PQSecretKey) -
 #[no_mangle]
 pub unsafe extern "C" fn pq_public_key_to_json(public_key: *const PQPublicKey) -> PQByteVec {
     to_json(Opaque::arg(public_key))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn pq_aggregate_signatures(
+    signature_count: usize,
+    public_keys_bytes_ptr: *const *const u8,
+    signatures_bytes_ptr: *const *const u8,
+    epoch: u32,
+    message: *const u8,
+) -> PQByteVec {
+    let public_keys = many_from_bytes::<PublicKeyType>(
+        public_keys_bytes_ptr,
+        signature_count,
+        PQ_PUBLIC_KEY_SIZE,
+    )
+    .unwrap();
+    let signatures =
+        many_from_bytes::<SignatureType>(signatures_bytes_ptr, signature_count, PQ_SIGNATURE_SIZE)
+            .unwrap();
+    let message = get_message(message);
+    let aggregated_signature =
+        lean_multisig::xmss_aggregate_signatures(&public_keys, &signatures, &message, epoch)
+            .unwrap();
+
+    // TODO: wait lean_multisig serialization
+    let aggregated_signature_bytes = serde_json::to_vec(&aggregated_signature).unwrap();
+
+    PQByteVec::new(&aggregated_signature_bytes)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn pq_verify_aggregated_signatures(
+    signature_count: usize,
+    public_keys_bytes_ptr: *const *const u8,
+    epoch: u32,
+    message: *const u8,
+    aggregated_signatures_ptr: *const u8,
+    aggregated_signatures_size: usize,
+) -> bool {
+    let public_keys = many_from_bytes::<PublicKeyType>(
+        public_keys_bytes_ptr,
+        signature_count,
+        PQ_PUBLIC_KEY_SIZE,
+    )
+    .unwrap();
+    let message = get_message(message);
+    let aggregated_signature_bytes =
+        from_raw_parts(aggregated_signatures_ptr, aggregated_signatures_size);
+
+    // TODO: wait lean_multisig serialization
+    let aggregated_signature =
+        serde_json::from_slice::<lean_multisig::Devnet2XmssAggregateSignature>(
+            aggregated_signature_bytes,
+        )
+        .unwrap();
+
+    lean_multisig::xmss_verify_aggregated_signatures(
+        &public_keys,
+        &message,
+        &aggregated_signature,
+        epoch,
+    )
+    .is_ok()
 }
 
 #[cfg(test)]

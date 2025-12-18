@@ -9,8 +9,9 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 cpp = { path = "../cpp" }
-leansig = { git = "https://github.com/leanEthereum/leanSig", rev = "f10dcbefac2502d356d93f686e8b4ecd8dc8840a" }
-rand = "0.9"
+lean-multisig = { git = "https://github.com/qdrvm/leanMultisig.git", rev = "f8af43ada841473072b36e5e51b606ec33f608e8" }
+leansig = { git = "https://github.com/leanEthereum/leanSig" }
+rand = "0.9.2"
 serde_json = "1.0"
 
 [build-dependencies]
