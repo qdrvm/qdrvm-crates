@@ -448,6 +448,7 @@ dependencies = [
 name = "c_hash_sig_crust"
 version = "0.2.0"
 dependencies = [
+ "bincode",
  "build-helper",
  "cpp",
  "lean-multisig",

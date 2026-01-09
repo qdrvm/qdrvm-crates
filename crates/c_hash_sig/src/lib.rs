@@ -546,7 +546,7 @@ pub unsafe extern "C" fn pq_aggregate_signatures(
             .unwrap();
 
     // TODO: wait lean_multisig serialization
-    let aggregated_signature_bytes = serde_json::to_vec(&aggregated_signature).unwrap();
+    let aggregated_signature_bytes = bincode::serialize(&aggregated_signature).unwrap();
 
     PQByteVec::new(&aggregated_signature_bytes)
 }
@@ -572,7 +572,7 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
 
     // TODO: wait lean_multisig serialization
     let aggregated_signature =
-        serde_json::from_slice::<lean_multisig::Devnet2XmssAggregateSignature>(
+        bincode::deserialize::<lean_multisig::Devnet2XmssAggregateSignature>(
             aggregated_signature_bytes,
         )
         .unwrap();
