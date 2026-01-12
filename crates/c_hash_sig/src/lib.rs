@@ -546,7 +546,7 @@ pub unsafe extern "C" fn pq_aggregate_signatures(
             .unwrap();
 
     // TODO: wait lean_multisig serialization
-    let aggregated_signature_bytes = bincode::serialize(&aggregated_signature).unwrap();
+    let aggregated_signature_bytes = aggregated_signature.to_bytes();
 
     PQByteVec::new(&aggregated_signature_bytes)
 }
@@ -572,10 +572,8 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
 
     // TODO: wait lean_multisig serialization
     let aggregated_signature =
-        bincode::deserialize::<lean_multisig::Devnet2XmssAggregateSignature>(
-            aggregated_signature_bytes,
-        )
-        .unwrap();
+        lean_multisig::Devnet2XmssAggregateSignature::from_bytes(aggregated_signature_bytes)
+            .unwrap();
 
     lean_multisig::xmss_verify_aggregated_signatures(
         &public_keys,
