@@ -1,6 +1,7 @@
 use cpp::from_raw_parts;
 use cpp::from_raw_parts_mut;
 use cpp::Opaque;
+use ssz::{Decode, Encode};
 use std::ops::Range;
 use std::os::raw::{c_char, c_int, c_uchar};
 
@@ -545,8 +546,7 @@ pub unsafe extern "C" fn pq_aggregate_signatures(
         lean_multisig::xmss_aggregate_signatures(&public_keys, &signatures, &message, epoch)
             .unwrap();
 
-    // TODO: wait lean_multisig serialization
-    let aggregated_signature_bytes = aggregated_signature.to_bytes();
+    let aggregated_signature_bytes = aggregated_signature.as_ssz_bytes();
 
     PQByteVec::new(&aggregated_signature_bytes)
 }
@@ -570,9 +570,8 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
     let aggregated_signature_bytes =
         from_raw_parts(aggregated_signatures_ptr, aggregated_signatures_size);
 
-    // TODO: wait lean_multisig serialization
     let aggregated_signature =
-        lean_multisig::Devnet2XmssAggregateSignature::from_bytes(aggregated_signature_bytes)
+        lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(aggregated_signature_bytes)
             .unwrap();
 
     lean_multisig::xmss_verify_aggregated_signatures(
