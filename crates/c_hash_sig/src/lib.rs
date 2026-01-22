@@ -570,9 +570,12 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
     let aggregated_signature_bytes =
         from_raw_parts(aggregated_signatures_ptr, aggregated_signatures_size);
 
-    let aggregated_signature =
-        lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(aggregated_signature_bytes)
-            .unwrap();
+    let aggregated_signature = match lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(
+        aggregated_signature_bytes,
+    ) {
+        Ok(aggregated_signature) => aggregated_signature,
+        _ => return false,
+    };
 
     lean_multisig::xmss_verify_aggregated_signatures(
         &public_keys,
