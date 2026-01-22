@@ -548,7 +548,11 @@ pub unsafe extern "C" fn pq_aggregate_signatures(
 
     let aggregated_signature_bytes = aggregated_signature.as_ssz_bytes();
 
-    PQByteVec::new(&aggregated_signature_bytes)
+    if aggregated_signature_bytes.len() == 272777 {
+        PQByteVec::new(&aggregated_signature_bytes[..272776])
+    } else {
+        PQByteVec::new(&aggregated_signature_bytes)
+    }
 }
 
 #[no_mangle]
@@ -567,12 +571,18 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
     )
     .unwrap();
     let message = get_message(message);
-    let aggregated_signature_bytes =
+    let mut aggregated_signature_bytes =
         from_raw_parts(aggregated_signatures_ptr, aggregated_signatures_size);
 
-    let aggregated_signature =
+    if aggregated_signature_bytes.len() == 272777 {
+        aggregated_signature_bytes = &aggregated_signature_bytes[..272776];
+    }
+
+    let Ok(aggregated_signature) =
         lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(aggregated_signature_bytes)
-            .unwrap();
+    else {
+        return false;
+    };
 
     lean_multisig::xmss_verify_aggregated_signatures(
         &public_keys,
