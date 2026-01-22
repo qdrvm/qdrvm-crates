@@ -548,11 +548,7 @@ pub unsafe extern "C" fn pq_aggregate_signatures(
 
     let aggregated_signature_bytes = aggregated_signature.as_ssz_bytes();
 
-    if aggregated_signature_bytes.len() == 272777 {
-        PQByteVec::new(&aggregated_signature_bytes[..272776])
-    } else {
-        PQByteVec::new(&aggregated_signature_bytes)
-    }
+    PQByteVec::new(&aggregated_signature_bytes)
 }
 
 #[no_mangle]
@@ -582,54 +578,28 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
             // Check for size mismatch
             if let ssz::DecodeError::InvalidByteLength { len, expected } = e {
                 if len > expected {
-                    eprintln!(
-                        "pq_verify_aggregated_signatures: Truncating signature from {} to {} and retrying",
-                        len, expected
-                    );
                     match lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(
                         &aggregated_signature_bytes[..expected],
                     ) {
                         Ok(sig) => sig,
-                        Err(e2) => {
-                            eprintln!(
-                                "pq_verify_aggregated_signatures: Retry failed with error: {:?}",
-                                e2
-                            );
-                            return false;
-                        }
+                        Err(_) => return false,
                     }
                 } else {
-                    eprintln!(
-                        "pq_verify_aggregated_signatures: Failed to deserialize (too short?): {:?}",
-                        e
-                    );
                     return false;
                 }
             } else {
-                eprintln!(
-                    "pq_verify_aggregated_signatures: Failed to deserialize: {:?}",
-                    e
-                );
                 return false;
             }
         }
     };
 
-    let result = lean_multisig::xmss_verify_aggregated_signatures(
+    lean_multisig::xmss_verify_aggregated_signatures(
         &public_keys,
         &message,
         &aggregated_signature,
         epoch,
-    );
-
-    if let Err(e) = &result {
-        eprintln!(
-            "pq_verify_aggregated_signatures: Verification failed with error: {:?}",
-            e
-        );
-    }
-
-    result.is_ok()
+    )
+    .is_ok()
 }
 
 #[cfg(test)]
