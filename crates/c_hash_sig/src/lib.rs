@@ -571,27 +571,48 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
     )
     .unwrap();
     let message = get_message(message);
-    let mut aggregated_signature_bytes =
+    let aggregated_signature_bytes =
         from_raw_parts(aggregated_signatures_ptr, aggregated_signatures_size);
 
-    if aggregated_signature_bytes.len() == 272777 {
-        eprintln!(
-            "pq_verify_aggregated_signatures: Truncating signature from {} to 272776",
-            aggregated_signature_bytes.len()
-        );
-        aggregated_signature_bytes = &aggregated_signature_bytes[..272776];
-    } else {
-        eprintln!(
-            "pq_verify_aggregated_signatures: Signature length: {}",
-            aggregated_signature_bytes.len()
-        );
-    }
-
-    let Ok(aggregated_signature) =
-        lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(aggregated_signature_bytes)
-    else {
-        eprintln!("pq_verify_aggregated_signatures: Failed to deserialize signature");
-        return false;
+    let aggregated_signature = match lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(
+        aggregated_signature_bytes,
+    ) {
+        Ok(sig) => sig,
+        Err(e) => {
+            // Check for size mismatch
+            if let ssz::DecodeError::InvalidByteLength { len, expected } = e {
+                if len > expected {
+                    eprintln!(
+                        "pq_verify_aggregated_signatures: Truncating signature from {} to {} and retrying",
+                        len, expected
+                    );
+                    match lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(
+                        &aggregated_signature_bytes[..expected],
+                    ) {
+                        Ok(sig) => sig,
+                        Err(e2) => {
+                            eprintln!(
+                                "pq_verify_aggregated_signatures: Retry failed with error: {:?}",
+                                e2
+                            );
+                            return false;
+                        }
+                    }
+                } else {
+                    eprintln!(
+                        "pq_verify_aggregated_signatures: Failed to deserialize (too short?): {:?}",
+                        e
+                    );
+                    return false;
+                }
+            } else {
+                eprintln!(
+                    "pq_verify_aggregated_signatures: Failed to deserialize: {:?}",
+                    e
+                );
+                return false;
+            }
+        }
     };
 
     let result = lean_multisig::xmss_verify_aggregated_signatures(
@@ -602,9 +623,10 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
     );
 
     if let Err(e) = &result {
-        eprintln!("pq_verify_aggregated_signatures: Verification failed with error: {:?}", e);
-    } else {
-        eprintln!("pq_verify_aggregated_signatures: Verification successful");
+        eprintln!(
+            "pq_verify_aggregated_signatures: Verification failed with error: {:?}",
+            e
+        );
     }
 
     result.is_ok()
