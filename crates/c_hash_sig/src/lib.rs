@@ -575,22 +575,39 @@ pub unsafe extern "C" fn pq_verify_aggregated_signatures(
         from_raw_parts(aggregated_signatures_ptr, aggregated_signatures_size);
 
     if aggregated_signature_bytes.len() == 272777 {
+        eprintln!(
+            "pq_verify_aggregated_signatures: Truncating signature from {} to 272776",
+            aggregated_signature_bytes.len()
+        );
         aggregated_signature_bytes = &aggregated_signature_bytes[..272776];
+    } else {
+        eprintln!(
+            "pq_verify_aggregated_signatures: Signature length: {}",
+            aggregated_signature_bytes.len()
+        );
     }
 
     let Ok(aggregated_signature) =
         lean_multisig::Devnet2XmssAggregateSignature::from_ssz_bytes(aggregated_signature_bytes)
     else {
+        eprintln!("pq_verify_aggregated_signatures: Failed to deserialize signature");
         return false;
     };
 
-    lean_multisig::xmss_verify_aggregated_signatures(
+    let result = lean_multisig::xmss_verify_aggregated_signatures(
         &public_keys,
         &message,
         &aggregated_signature,
         epoch,
-    )
-    .is_ok()
+    );
+
+    if let Err(e) = &result {
+        eprintln!("pq_verify_aggregated_signatures: Verification failed with error: {:?}", e);
+    } else {
+        eprintln!("pq_verify_aggregated_signatures: Verification successful");
+    }
+
+    result.is_ok()
 }
 
 #[cfg(test)]
